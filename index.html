@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My To-Do</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <canvas id="bgCanvas"></canvas>
+
+  <h1>📝 My To-Do</h1>
+  <p class="subtitle">Stay organized • Plan your day • Never miss a task!</p>
+
+  <div class="todo-container">
+    <div class="input-section">
+      <input type="text" id="taskInput" placeholder="Enter your task..." />
+      <input type="datetime-local" id="taskDateTime" />
+      <button onclick="addTask()">Add</button>
+    </div>
+
+    <ul id="taskList"></ul>
+  </div>
+
+  <script src="script.js"></script>
+  <script src="particles.js"></script>
+</body>
+</html>
