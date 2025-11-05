@@ -1,28 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My To-Do</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My To-Do App</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <canvas id="bgCanvas"></canvas>
+  <div class="container">
+    <h1>📝 My To-Do </h1>
 
-  <h1>📝 My To-Do</h1>
-  <p class="subtitle">Stay organized • Plan your day • Never miss a task!</p>
-
-  <div class="todo-container">
     <div class="input-section">
-      <input type="text" id="taskInput" placeholder="Enter your task..." />
-      <input type="datetime-local" id="taskDateTime" />
+      <input type="text" id="taskInput" placeholder="✍️ Enter your task...">
+      <input type="datetime-local" id="taskDate">
+      <select id="priority">
+        <option value="normal">Normal</option>
+        <option value="high">High</option>
+      </select>
       <button onclick="addTask()">Add</button>
     </div>
 
-    <ul id="taskList"></ul>
+    <div class="search-section">
+      <input type="text" id="searchBox" placeholder="🔍 Search your tasks easily..." onkeyup="searchTasks()">
+    </div>
+
+    <div class="filter-section">
+      <button onclick="filterTasks('all')">All</button>
+      <button onclick="filterTasks('completed')">Completed</button>
+      <button onclick="filterTasks('pending')">Pending</button>
+      <button onclick="clearAll()">Clear All</button>
+    </div>
+
+    <ul class="task-list" id="taskList"></ul>
+    <div class="stats" id="taskStats"></div>
   </div>
 
+  <div id="notification" class="notification"></div>
+
   <script src="script.js"></script>
-  <script src="particles.js"></script>
 </body>
 </html>
