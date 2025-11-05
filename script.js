@@ -1,4 +1,5 @@
 let tasks = [];
+let completedTasks = [];
 let currentUser = localStorage.getItem("currentUser");
 
 const taskList = document.getElementById("taskList");
@@ -23,7 +24,9 @@ function loadUserData() {
   loginContainer.classList.add("hidden");
   todoContainer.classList.remove("hidden");
   const storedTasks = localStorage.getItem(`tasks_${currentUser}`);
+  const storedCompleted = localStorage.getItem(`completed_${currentUser}`);
   tasks = storedTasks ? JSON.parse(storedTasks) : [];
+  completedTasks = storedCompleted ? JSON.parse(storedCompleted) : [];
   renderTasks();
 }
 
@@ -34,36 +37,46 @@ function logout() {
   setTimeout(() => location.reload(), 800);
 }
 
-// 💾 Save tasks under the current user's account
+// 💾 Save tasks
 function saveTasks() {
   localStorage.setItem(`tasks_${currentUser}`, JSON.stringify(tasks));
+  localStorage.setItem(`completed_${currentUser}`, JSON.stringify(completedTasks));
   updateStats();
 }
 
+// 🧾 Render tasks based on filter
 function renderTasks(filter = "all") {
   taskList.innerHTML = "";
-  const filtered = tasks.filter(
-    t => filter === "all" || (filter === "completed" && t.completed) || (filter === "pending" && !t.completed)
-  );
+  let displayList = [];
 
-  filtered.forEach((task, index) => {
+  if (filter === "all") displayList = [...tasks, ...completedTasks];
+  else if (filter === "completed") displayList = completedTasks;
+  else if (filter === "pending") displayList = tasks;
+
+  displayList.forEach((task, index) => {
     const li = document.createElement("li");
-    li.className = `task`;
+    li.className = `task ${task.completed ? "completed" : ""}`;
     li.innerHTML = `
       <span><strong>${task.text}</strong> 
       <small>${task.date ? '(' + new Date(task.date).toLocaleString() + ')' : ''}</small></span>
       <div class="task-buttons">
-        <button class="complete" title="Mark as Completed" onclick="toggleComplete(${index})">✅</button>
-        <button class="edit" title="Edit Task" onclick="editTask(${index})">✏️</button>
-        <button class="priority" title="Toggle Priority" onclick="togglePriority(${index})">⚡</button>
-        <button class="delete" title="Delete Task" onclick="deleteTask(${index})">🗑️</button>
+        ${
+          !task.completed
+            ? `<button class="complete" title="Mark as Completed" onclick="toggleComplete(${index})">✅</button>`
+            : ""
+        }
+        <button class="edit" title="Edit Task" onclick="editTask(${index}, '${filter}')">✏️</button>
+        <button class="priority" title="Toggle Priority" onclick="togglePriority(${index}, '${filter}')">⚡</button>
+        <button class="delete" title="Delete Task" onclick="deleteTask(${index}, '${filter}')">🗑️</button>
       </div>`;
     if (task.priority === "high") li.style.borderLeft = "5px solid #fdcb6e";
     taskList.appendChild(li);
   });
+
   updateStats();
 }
 
+// ➕ Add task
 function addTask() {
   const text = document.getElementById("taskInput").value.trim();
   const date = document.getElementById("taskDate").value;
@@ -78,68 +91,78 @@ function addTask() {
   document.getElementById("taskDate").value = "";
 }
 
-// ✅ Updated: Remove task when completed
+// ✅ Mark complete → Move to completed list
 function toggleComplete(index) {
   const completedTask = tasks.splice(index, 1)[0];
+  completedTask.completed = true;
+  completedTasks.push(completedTask);
   saveTasks();
   renderTasks();
   showNotification(`🎉 Task "${completedTask.text}" completed successfully!`);
 }
 
-function editTask(index) {
-  const newText = prompt("Edit task:", tasks[index].text);
+// ✏️ Edit task (works for both lists)
+function editTask(index, filter) {
+  const list = filter === "completed" ? completedTasks : tasks;
+  const newText = prompt("Edit task:", list[index].text);
   if (newText) {
-    tasks[index].text = newText;
+    list[index].text = newText;
     saveTasks();
-    renderTasks();
+    renderTasks(filter);
     showNotification("✏️ Task updated successfully!");
   }
 }
 
-function deleteTask(index) {
-  const deleted = tasks[index].text;
-  tasks.splice(index, 1);
+// 🗑️ Delete task (works for both lists)
+function deleteTask(index, filter) {
+  const list = filter === "completed" ? completedTasks : tasks;
+  const deleted = list[index].text;
+  list.splice(index, 1);
   saveTasks();
-  renderTasks();
+  renderTasks(filter);
   showNotification(`🗑️ Task "${deleted}" deleted!`);
 }
 
-function togglePriority(index) {
-  tasks[index].priority = tasks[index].priority === "high" ? "normal" : "high";
+// ⚡ Toggle priority
+function togglePriority(index, filter) {
+  const list = filter === "completed" ? completedTasks : tasks;
+  list[index].priority = list[index].priority === "high" ? "normal" : "high";
   saveTasks();
-  renderTasks();
+  renderTasks(filter);
 }
 
-function filterTasks(type) {
-  renderTasks(type);
-}
-
-function clearAll() {
-  tasks = [];
-  saveTasks();
-  renderTasks();
-  showNotification("🧹 All tasks cleared!");
-}
-
+// 🔍 Search tasks
 function searchTasks() {
   const query = document.getElementById("searchBox").value.toLowerCase();
-  const filtered = tasks.filter(t => t.text.toLowerCase().includes(query));
+  const allTasks = [...tasks, ...completedTasks];
+  const filtered = allTasks.filter(t => t.text.toLowerCase().includes(query));
   taskList.innerHTML = "";
   filtered.forEach(task => {
     const li = document.createElement("li");
-    li.className = "task";
+    li.className = `task ${task.completed ? "completed" : ""}`;
     li.innerHTML = `<span><strong>${task.text}</strong></span>`;
     taskList.appendChild(li);
   });
 }
 
+// 🧹 Clear all
+function clearAll() {
+  tasks = [];
+  completedTasks = [];
+  saveTasks();
+  renderTasks();
+  showNotification("🧹 All tasks cleared!");
+}
+
+// 📊 Update Stats
 function updateStats() {
-  const total = tasks.length;
-  const completed = 0; // no longer tracked since we delete completed
-  const pending = total;
+  const total = tasks.length + completedTasks.length;
+  const completed = completedTasks.length;
+  const pending = tasks.length;
   taskStats.innerHTML = `Total: ${total} | ✅ Completed: ${completed} | ⏳ Pending: ${pending}`;
 }
 
+// 🔔 Notification
 function showNotification(message) {
   const note = document.getElementById("notification");
   note.textContent = message;
