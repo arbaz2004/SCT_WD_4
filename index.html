@@ -17,7 +17,7 @@
       <div class="app-title">
         <div class="app-title-icon">✓</div>
         <div class="app-title-text">
-          <h1>📝To-Do-Task</h1>
+          <h1>To-Do-Task</h1>
           <span>Organize tasks • Set deadlines • Stay on track</span>
         </div>
       </div>
@@ -30,16 +30,12 @@
     <!-- Task Input Row -->
     <section class="task-input">
       <input id="task-title" type="text" placeholder="What do you want to get done?" />
-
-      <!-- Calendar date picker -->
       <input id="task-date" type="date" />
-
       <select id="task-priority">
         <option value="medium">Priority: Medium</option>
         <option value="high">Priority: High</option>
         <option value="low">Priority: Low</option>
       </select>
-
       <button id="add-btn" class="btn btn-primary">
         <span class="btn-icon">＋</span> Add Task
       </button>
@@ -76,10 +72,11 @@
 
     <div class="footer-hint">
       <span><strong>Pro tip:</strong> Double-click a task title to edit it.</span>
+      <span>All tasks are saved automatically in your browser (localStorage).</span>
     </div>
   </div>
 
-  <!-- External JS -->
+  <!-- External JS (IMPORTANT: keep this at the bottom) -->
   <script src="app.js"></script>
 </body>
 </html>
