@@ -3,17 +3,23 @@
   margin: 0;
   padding: 0;
 }
-
-/* White background */
 body {
   font-family: "Poppins", sans-serif;
   min-height: 100vh;
-  color: #0f172a;
+  color: #e5e7eb;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 2.5rem 1.5rem;
-  background-color: #ffffff;
+
+  /* 🔥 ORIGINAL PROFESSIONAL DARK GRADIENT BACKGROUND */
+  background-color: #020617;
+  background-image:
+    radial-gradient(circle at 0% 0%, #22c55e33 0, transparent 55%),
+    radial-gradient(circle at 0% 70%, #0ea5e933 0, transparent 55%),
+    radial-gradient(circle at 100% 0%, #1d253580 0, transparent 55%),
+    radial-gradient(circle at 50% 120%, #020617 0, #000000 60%);
+  background-repeat: no-repeat;
 }
 
 /* Dark glassy app card */
