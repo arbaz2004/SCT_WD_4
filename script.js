@@ -1,173 +1,337 @@
-let tasks = [];
-let completedTasks = [];
-let currentUser = localStorage.getItem("currentUser");
+// ----- Data -----
+const STORAGE_KEY = "advanced_todo_tasks_v1";
 
-const taskList = document.getElementById("taskList");
-const taskStats = document.getElementById("taskStats");
-const loginContainer = document.getElementById("loginContainer");
-const todoContainer = document.getElementById("todoContainer");
+let tasks = loadTasks();
+let currentFilter = "all";
+let currentSearch = "";
+let currentSort = "created-desc";
 
-if (currentUser) loadUserData();
+// ----- Elements -----
+const taskTitleInput = document.getElementById("task-title");
+const taskDateInput = document.getElementById("task-date");
+const taskPrioritySelect = document.getElementById("task-priority");
+const addBtn = document.getElementById("add-btn");
+const taskListEl = document.getElementById("task-list");
+const filterChips = document.querySelectorAll(".filter-chip");
+const searchBox = document.getElementById("search-box");
+const sortSelect = document.getElementById("sort-select");
+const clearCompletedBtn = document.getElementById("clear-completed");
+const statTotal = document.getElementById("stat-total");
+const statCompleted = document.getElementById("stat-completed");
 
-// 🔐 Login
-function login() {
-  const username = document.getElementById("username").value.trim();
-  if (!username) return showNotification("⚠️ Please enter a username!");
+// ----- Init -----
+render();
 
-  localStorage.setItem("currentUser", username);
-  currentUser = username;
-  loadUserData();
-  showNotification(`👋 Welcome, ${username}!`);
-}
+// ----- Event Listeners -----
+addBtn.addEventListener("click", handleAddTask);
 
-function loadUserData() {
-  loginContainer.classList.add("hidden");
-  todoContainer.classList.remove("hidden");
-  const storedTasks = localStorage.getItem(`tasks_${currentUser}`);
-  const storedCompleted = localStorage.getItem(`completed_${currentUser}`);
-  tasks = storedTasks ? JSON.parse(storedTasks) : [];
-  completedTasks = storedCompleted ? JSON.parse(storedCompleted) : [];
-  renderTasks();
-}
+taskTitleInput.addEventListener("keyup", (e) => {
+  if (e.key === "Enter") handleAddTask();
+});
 
-// 🚪 Logout
-function logout() {
-  localStorage.removeItem("currentUser");
-  showNotification("👋 Logged out!");
-  setTimeout(() => location.reload(), 800);
-}
-
-// 💾 Save tasks
-function saveTasks() {
-  localStorage.setItem(`tasks_${currentUser}`, JSON.stringify(tasks));
-  localStorage.setItem(`completed_${currentUser}`, JSON.stringify(completedTasks));
-  updateStats();
-}
-
-// 🧾 Render tasks based on filter
-function renderTasks(filter = "all") {
-  taskList.innerHTML = "";
-  let displayList = [];
-
-  if (filter === "all") displayList = [...tasks, ...completedTasks];
-  else if (filter === "completed") displayList = completedTasks;
-  else if (filter === "pending") displayList = tasks;
-
-  displayList.forEach((task, index) => {
-    const li = document.createElement("li");
-    li.className = `task ${task.completed ? "completed" : ""}`;
-    li.innerHTML = `
-      <span><strong>${task.text}</strong> 
-      <small>${task.date ? '(' + new Date(task.date).toLocaleString() + ')' : ''}</small></span>
-      <div class="task-buttons">
-        ${
-          !task.completed
-            ? `<button class="complete" title="Mark as Completed" onclick="toggleComplete(${index})">✅</button>`
-            : ""
-        }
-        <button class="edit" title="Edit Task" onclick="editTask(${index}, '${filter}')">✏️</button>
-        <button class="priority" title="Toggle Priority" onclick="togglePriority(${index}, '${filter}')">⚡</button>
-        <button class="delete" title="Delete Task" onclick="deleteTask(${index}, '${filter}')">🗑️</button>
-      </div>`;
-    if (task.priority === "high") li.style.borderLeft = "5px solid #fdcb6e";
-    taskList.appendChild(li);
+filterChips.forEach((chip) => {
+  chip.addEventListener("click", () => {
+    filterChips.forEach((c) => c.classList.remove("active"));
+    chip.classList.add("active");
+    currentFilter = chip.dataset.filter;
+    render();
   });
+});
 
-  updateStats();
-}
+searchBox.addEventListener("input", () => {
+  currentSearch = searchBox.value.toLowerCase();
+  render();
+});
 
-// ➕ Add task
-function addTask() {
-  const text = document.getElementById("taskInput").value.trim();
-  const date = document.getElementById("taskDate").value;
-  const priority = document.getElementById("priority").value;
+sortSelect.addEventListener("change", () => {
+  currentSort = sortSelect.value;
+  render();
+});
 
-  if (!text) return showNotification("⚠️ Please enter a task!");
-  tasks.push({ text, date, completed: false, priority });
+clearCompletedBtn.addEventListener("click", () => {
+  tasks = tasks.filter((t) => !t.completed);
   saveTasks();
-  renderTasks();
-  showNotification("✅ Task added successfully!");
-  document.getElementById("taskInput").value = "";
-  document.getElementById("taskDate").value = "";
-}
+  render();
+});
 
-// ✅ Mark complete → Move to completed list
-function toggleComplete(index) {
-  const completedTask = tasks.splice(index, 1)[0];
-  completedTask.completed = true;
-  completedTasks.push(completedTask);
+// Event delegation for list actions
+taskListEl.addEventListener("click", (e) => {
+  const row = e.target.closest(".task-row");
+  if (!row) return;
+  const id = row.dataset.id;
+
+  if (e.target.matches(".task-checkbox")) {
+    toggleComplete(id);
+  } else if (e.target.matches(".icon-btn.delete")) {
+    deleteTask(id);
+  } else if (e.target.matches(".icon-btn.edit")) {
+    startInlineEdit(row, id);
+  }
+});
+
+taskListEl.addEventListener("dblclick", (e) => {
+  const titleEl = e.target.closest(".task-title");
+  if (!titleEl) return;
+  const row = e.target.closest(".task-row");
+  const id = row.dataset.id;
+  startInlineEdit(row, id);
+});
+
+// ----- Functions -----
+function handleAddTask() {
+  const title = taskTitleInput.value.trim();
+  const date = taskDateInput.value; // yyyy-mm-dd
+  const priority = taskPrioritySelect.value;
+
+  if (!title) {
+    taskTitleInput.focus();
+    return;
+  }
+
+  const now = new Date().toISOString();
+
+  const newTask = {
+    id: Date.now().toString(),
+    title,
+    due: date || null,       // store date string
+    priority,
+    completed: false,
+    createdAt: now
+  };
+
+  tasks.unshift(newTask);
   saveTasks();
-  renderTasks();
-  showNotification(`🎉 Task "${completedTask.text}" completed successfully!`);
+  render();
+
+  taskTitleInput.value = "";
+  taskDateInput.value = "";
+  taskPrioritySelect.value = "medium";
+  taskTitleInput.focus();
 }
 
-// ✏️ Edit task (works for both lists)
-function editTask(index, filter) {
-  const list = filter === "completed" ? completedTasks : tasks;
-  const newText = prompt("Edit task:", list[index].text);
-  if (newText) {
-    list[index].text = newText;
-    saveTasks();
-    renderTasks(filter);
-    showNotification("✏️ Task updated successfully!");
+function toggleComplete(id) {
+  tasks = tasks.map((t) =>
+    t.id === id ? { ...t, completed: !t.completed } : t
+  );
+  saveTasks();
+  render();
+}
+
+function deleteTask(id) {
+  tasks = tasks.filter((t) => t.id !== id);
+  saveTasks();
+  render();
+}
+
+function startInlineEdit(rowEl, id) {
+  const task = tasks.find((t) => t.id === id);
+  if (!task) return;
+
+  const titleEl = rowEl.querySelector(".task-title");
+  if (!titleEl) return;
+
+  const current = task.title;
+  const input = document.createElement("input");
+  input.type = "text";
+  input.value = current;
+  input.style.width = "100%";
+  input.style.borderRadius = "999px";
+  input.style.border = "1px solid rgba(148,163,184,0.8)";
+  input.style.background = "#020617";
+  input.style.color = "#e5e7eb";
+  input.style.fontSize = "0.8rem";
+  input.style.padding = "0.2rem 0.45rem";
+
+  titleEl.replaceWith(input);
+  input.focus();
+  input.select();
+
+  const finish = (save) => {
+    const newTitle = input.value.trim();
+    let finalTitle = current;
+    if (save && newTitle) {
+      finalTitle = newTitle;
+      tasks = tasks.map((t) =>
+        t.id === id ? { ...t, title: finalTitle } : t
+      );
+      saveTasks();
+    }
+    render();
+  };
+
+  input.addEventListener("blur", () => finish(true));
+  input.addEventListener("keyup", (e) => {
+    if (e.key === "Enter") finish(true);
+    else if (e.key === "Escape") finish(false);
+  });
+}
+
+function loadTasks() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch {
+    return [];
   }
 }
 
-// 🗑️ Delete task (works for both lists)
-function deleteTask(index, filter) {
-  const list = filter === "completed" ? completedTasks : tasks;
-  const deleted = list[index].text;
-  list.splice(index, 1);
-  saveTasks();
-  renderTasks(filter);
-  showNotification(`🗑️ Task "${deleted}" deleted!`);
+function saveTasks() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
 }
 
-// ⚡ Toggle priority
-function togglePriority(index, filter) {
-  const list = filter === "completed" ? completedTasks : tasks;
-  list[index].priority = list[index].priority === "high" ? "normal" : "high";
-  saveTasks();
-  renderTasks(filter);
-}
+function render() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-// 🔍 Search tasks
-function searchTasks() {
-  const query = document.getElementById("searchBox").value.toLowerCase();
-  const allTasks = [...tasks, ...completedTasks];
-  const filtered = allTasks.filter(t => t.text.toLowerCase().includes(query));
-  taskList.innerHTML = "";
-  filtered.forEach(task => {
-    const li = document.createElement("li");
-    li.className = `task ${task.completed ? "completed" : ""}`;
-    li.innerHTML = `<span><strong>${task.text}</strong></span>`;
-    taskList.appendChild(li);
+  let filtered = tasks.filter((t) => {
+    if (currentFilter === "active" && t.completed) return false;
+    if (currentFilter === "completed" && !t.completed) return false;
+    if (currentFilter === "overdue") {
+      if (!t.due) return false;
+      if (t.completed) return false;
+      const d = parseDateOnly(t.due);
+      if (!d || d >= today) return false;
+    }
+    if (currentSearch) {
+      return t.title.toLowerCase().includes(currentSearch);
+    }
+    return true;
   });
+
+  filtered.sort((a, b) => {
+    switch (currentSort) {
+      case "created-asc":
+        return new Date(a.createdAt) - new Date(b.createdAt);
+      case "created-desc":
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      case "due-asc":
+        return (a.due || "").localeCompare(b.due || "");
+      case "due-desc":
+        return (b.due || "").localeCompare(a.due || "");
+      case "priority-desc":
+        return priorityWeight(b.priority) - priorityWeight(a.priority);
+      case "priority-asc":
+        return priorityWeight(a.priority) - priorityWeight(b.priority);
+      default:
+        return 0;
+    }
+  });
+
+  if (!filtered.length) {
+    taskListEl.innerHTML = `
+      <div class="empty-state">
+        <span>📝</span>
+        No tasks here. Add something you want to get done today!
+      </div>
+    `;
+  } else {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    taskListEl.innerHTML = filtered
+      .map((t) => taskRowTemplate(t, now))
+      .join("");
+  }
+
+  statTotal.textContent = tasks.length;
+  statCompleted.textContent = tasks.filter((t) => t.completed).length;
 }
 
-// 🧹 Clear all
-function clearAll() {
-  tasks = [];
-  completedTasks = [];
-  saveTasks();
-  renderTasks();
-  showNotification("🧹 All tasks cleared!");
+function taskRowTemplate(task, today) {
+  const d = task.due ? parseDateOnly(task.due) : null;
+  const isOverdue = d && !task.completed && d < today;
+  const dueLabel = formatDue(task.due, isOverdue);
+
+  const rowClasses = [
+    "task-row",
+    task.completed ? "completed" : ""
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return `
+    <article class="${rowClasses}" data-id="${task.id}">
+      <input type="checkbox" class="task-checkbox" ${
+        task.completed ? "checked" : ""
+      } />
+      <div class="task-main">
+        <div class="task-title">${escapeHtml(task.title)}</div>
+        <div class="task-meta">
+          Created ${formatRelative(task.createdAt)}
+          ${
+            isOverdue
+              ? ' • <span style="color:#f97373">Overdue</span>'
+              : ""
+          }
+        </div>
+      </div>
+      <div class="task-due">${dueLabel}</div>
+      <div class="task-priority ${priorityClass(task.priority)}">
+        ${task.priority}
+      </div>
+      <div class="task-actions">
+        <button class="icon-btn edit" title="Edit task">✏</button>
+        <button class="icon-btn delete" title="Delete task">🗑</button>
+      </div>
+    </article>
+  `;
 }
 
-// 📊 Update Stats
-function updateStats() {
-  const total = tasks.length + completedTasks.length;
-  const completed = completedTasks.length;
-  const pending = tasks.length;
-  taskStats.innerHTML = `Total: ${total} | ✅ Completed: ${completed} | ⏳ Pending: ${pending}`;
+function parseDateOnly(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr + "T00:00");
+  if (Number.isNaN(d.getTime())) return null;
+  return d;
 }
 
-// 🔔 Notification
-function showNotification(message) {
-  const note = document.getElementById("notification");
-  note.textContent = message;
-  note.classList.add("show");
-  setTimeout(() => note.classList.remove("show"), 3000);
+function priorityWeight(p) {
+  if (p === "high") return 3;
+  if (p === "medium") return 2;
+  return 1;
 }
 
-renderTasks();
+function priorityClass(p) {
+  if (p === "high") return "priority-high";
+  if (p === "medium") return "priority-medium";
+  return "priority-low";
+}
+
+function formatDue(due, isOverdue) {
+  if (!due) return '<span style="color:#6b7280">No deadline</span>';
+  const d = parseDateOnly(due);
+  if (!d) return "—";
+
+  const label = d.toLocaleDateString(undefined, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  });
+  const color = isOverdue ? "#fecaca" : "#e5e7eb";
+  return `<span style="color:${color}">${label}</span>`;
+}
+
+function formatRelative(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const diffMs = Date.now() - d.getTime();
+  const diffMin = Math.round(diffMs / 60000);
+  if (diffMin < 1) return "just now";
+  if (diffMin === 1) return "1 min ago";
+  if (diffMin < 60) return diffMin + " mins ago";
+  const diffH = Math.round(diffMin / 60);
+  if (diffH === 1) return "1 hour ago";
+  if (diffH < 24) return diffH + " hours ago";
+  const diffD = Math.round(diffH / 24);
+  if (diffD === 1) return "1 day ago";
+  if (diffD < 7) return diffD + " days ago";
+  const diffW = Math.round(diffD / 7);
+  if (diffW === 1) return "1 week ago";
+  return diffW + " weeks ago";
+}
+
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
