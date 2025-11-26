@@ -4,34 +4,28 @@
   padding: 0;
 }
 
-/* Professional background: subtle gradients & vignette */
+/* White background */
 body {
   font-family: "Poppins", sans-serif;
   min-height: 100vh;
-  color: #e5e7eb;
+  color: #0f172a;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 2.5rem 1.5rem;
-  background-color: #020617;
-  background-image:
-    radial-gradient(circle at 0% 0%, #22c55e33 0, transparent 55%),
-    radial-gradient(circle at 0% 70%, #0ea5e933 0, transparent 55%),
-    radial-gradient(circle at 100% 0%, #1d253580 0, transparent 55%),
-    radial-gradient(circle at 50% 120%, #020617 0, #000000 60%);
-  background-repeat: no-repeat;
+  background-color: #ffffff;
 }
 
-
-/* Glassy main card */
+/* Dark glassy app card */
 .app-shell {
   width: 100%;
   max-width: 980px;
-  background: #0b1020;            /* keep dark card */
+  background: #020617;
   border-radius: 26px;
   padding: 1.9rem 2rem 2.2rem;
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.25);
   border: 1px solid rgba(148, 163, 184, 0.25);
+  color: #e5e7eb;
 }
 
 /* Header */
@@ -104,7 +98,6 @@ body {
   transition: border 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, transform 0.1s ease;
 }
 
-/* calendar icon spacing looks better with this */
 .task-input input[type="date"] {
   color-scheme: dark;
 }
@@ -210,7 +203,7 @@ body {
 .filter-chip.active {
   border-color: #22c55e;
   color: #bbf7d0;
-  background: radial-gradient(circle at 20% 0%, #22c55e33 0, rgba(22, 163, 74, 0.24) 60%);
+  background: rgba(22, 163, 74, 0.24);
 }
 
 .toolbar input[type="search"],
@@ -233,7 +226,7 @@ body {
 /* List */
 .task-list {
   border-radius: 20px;
-  background: radial-gradient(circle at 0% 0%, #020617 0, #020617 40%, #020617 100%);
+  background: #020617;
   border: 1px solid rgba(55, 65, 81, 0.85);
   padding: 0.35rem 0.1rem;
   max-height: 420px;
