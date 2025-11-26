@@ -93,7 +93,7 @@ function handleAddTask() {
   const newTask = {
     id: Date.now().toString(),
     title,
-    due: date || null,       // store date string
+    due: date || null,
     priority,
     completed: false,
     createdAt: now
