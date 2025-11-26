@@ -1,42 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My To-Do App</title>
+  <meta charset="UTF-8" />
+  <title>To-Do Web App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <!-- External CSS -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-    <h1>📝 My To-Do </h1>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="app-title">
+        <div class="app-title-icon">✓</div>
+        <div class="app-title-text">
+          <h1>📝To-Do-Task</h1>
+          <span>Organize tasks • Set deadlines • Stay on track</span>
+        </div>
+      </div>
+      <div class="quick-stats">
+        <div>Total Tasks: <strong id="stat-total">0</strong></div>
+        <div>Completed: <strong id="stat-completed">0</strong></div>
+      </div>
+    </header>
 
-    <div class="input-section">
-      <input type="text" id="taskInput" placeholder="✍️ Enter your task...">
-      <input type="datetime-local" id="taskDate">
-      <select id="priority">
-        <option value="normal">Normal</option>
-        <option value="high">High</option>
+    <!-- Task Input Row -->
+    <section class="task-input">
+      <input id="task-title" type="text" placeholder="What do you want to get done?" />
+
+      <!-- Calendar date picker -->
+      <input id="task-date" type="date" />
+
+      <select id="task-priority">
+        <option value="medium">Priority: Medium</option>
+        <option value="high">Priority: High</option>
+        <option value="low">Priority: Low</option>
       </select>
-      <button onclick="addTask()">Add</button>
-    </div>
 
-    <div class="search-section">
-      <input type="text" id="searchBox" placeholder="🔍 Search your tasks easily..." onkeyup="searchTasks()">
-    </div>
+      <button id="add-btn" class="btn btn-primary">
+        <span class="btn-icon">＋</span> Add Task
+      </button>
+    </section>
 
-    <div class="filter-section">
-      <button onclick="filterTasks('all')">All</button>
-      <button onclick="filterTasks('completed')">Completed</button>
-      <button onclick="filterTasks('pending')">Pending</button>
-      <button onclick="clearAll()">Clear All</button>
-    </div>
+    <!-- Toolbar -->
+    <section class="toolbar">
+      <div class="toolbar-left">
+        <button class="filter-chip active" data-filter="all">All</button>
+        <button class="filter-chip" data-filter="active">Active</button>
+        <button class="filter-chip" data-filter="completed">Completed</button>
+        <button class="filter-chip" data-filter="overdue">Overdue</button>
+      </div>
+      <div class="toolbar-right">
+        <input type="search" id="search-box" placeholder="Search tasks…" />
+        <select id="sort-select">
+          <option value="created-desc">Newest first</option>
+          <option value="created-asc">Oldest first</option>
+          <option value="due-asc">Due date ↑</option>
+          <option value="due-desc">Due date ↓</option>
+          <option value="priority-desc">Priority: High → Low</option>
+          <option value="priority-asc">Priority: Low → High</option>
+        </select>
+        <button id="clear-completed" class="btn btn-ghost">
+          Clear completed
+        </button>
+      </div>
+    </section>
 
-    <ul class="task-list" id="taskList"></ul>
-    <div class="stats" id="taskStats"></div>
+    <!-- Task List -->
+    <section id="task-list" class="task-list">
+      <!-- JS will render tasks here -->
+    </section>
+
+    <div class="footer-hint">
+      <span><strong>Pro tip:</strong> Double-click a task title to edit it.</span>
+    </div>
   </div>
 
-  <div id="notification" class="notification"></div>
-
-  <script src="script.js"></script>
+  <!-- External JS -->
+  <script src="app.js"></script>
 </body>
 </html>
